@@ -3,23 +3,13 @@
 namespace Filament\Forms\Concerns;
 
 use Filament\Forms\Components\BaseFileUpload;
+use Filament\Forms\Components\Component;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 trait HasState
 {
     protected ?string $statePath = null;
-
-    public function callAfterStateHydrated(): void
-    {
-        foreach ($this->getComponents(withHidden: true) as $component) {
-            $component->callAfterStateHydrated();
-
-            foreach ($component->getChildComponentContainers(withHidden: true) as $container) {
-                $container->callAfterStateHydrated();
-            }
-        }
-    }
 
     public function callAfterStateUpdated(string $path): bool
     {
@@ -135,75 +125,30 @@ trait HasState
 
     public function fill(?array $state = null): static
     {
-        if ($state === null) {
-            return $this->fillWithDefaults();
-        }
+        $shouldFillWithDefault = $state === null;
 
         $livewire = $this->getLivewire();
 
-        if ($statePath = $this->getStatePath()) {
-            data_set($livewire, $statePath, $state);
-        } else {
-            $this->fillComponentStateWithNull();
-
-            foreach ($state as $key => $value) {
-                data_set($livewire, $key, $value);
-            }
-        }
-
-        $this->loadStateFromRelationships();
-
-        $this->callAfterStateHydrated();
-
-        $this->fillComponentStateWithNull(shouldOverwrite: false);
-
-        return $this;
-    }
-
-    protected function fillWithDefaults(): static
-    {
-        if ($statePath = $this->getStatePath()) {
-            $livewire = $this->getLivewire();
-
-            data_set($livewire, $statePath, []);
-        } else {
-            $this->fillComponentStateWithNull();
-        }
-
-        $this->hydrateDefaultState();
-
-        $this->fillComponentStateWithNull(shouldOverwrite: false);
-
-        return $this;
-    }
-
-    public function hydrateDefaultState(): static
-    {
-        foreach ($this->getComponents(withHidden: true) as $component) {
-            $component->hydrateDefaultState();
-            $component->callAfterStateHydrated();
-
-            foreach ($component->getChildComponentContainers(withHidden: true) as $container) {
-                $container->hydrateDefaultState();
-            }
-        }
-
-        return $this;
-    }
-
-    public function fillComponentStateWithNull(bool $shouldOverwrite = true): static
-    {
-        foreach ($this->getComponents(withHidden: true) as $component) {
-            if ($component->hasChildComponentContainer(withHidden: true)) {
-                foreach ($component->getChildComponentContainers(withHidden: true) as $container) {
-                    $container->fillComponentStateWithNull($shouldOverwrite);
-                }
+        if ($state) {
+            if ($statePath = $this->getStatePath()) {
+                data_set($livewire, $statePath, $state);
             } else {
-                $component->fillStateWithNull($shouldOverwrite);
+                foreach ($state ?? [] as $key => $value) {
+                    data_set($livewire, $key, $value);
+                }
             }
         }
 
+        $this->hydrateState($shouldFillWithDefault);
+
         return $this;
+    }
+
+    public function hydrateState(bool $shouldFillWithDefault): void
+    {
+        foreach ($this->getComponents(withHidden: true) as $component) {
+            $component->hydrateState($shouldFillWithDefault);
+        }
     }
 
     public function statePath(?string $path): static

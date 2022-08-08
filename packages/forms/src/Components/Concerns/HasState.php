@@ -4,6 +4,7 @@ namespace Filament\Forms\Components\Concerns;
 
 use Closure;
 use Filament\Forms\Components\Component;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 
@@ -20,8 +21,6 @@ trait HasState
     protected ?Closure $dehydrateStateUsing = null;
 
     protected ?Closure $mutateDehydratedStateUsing = null;
-
-    protected bool $hasDefaultState = false;
 
     protected bool | Closure $isDehydrated = true;
 
@@ -80,7 +79,6 @@ trait HasState
     public function default($state): static
     {
         $this->defaultState = $state;
-        $this->hasDefaultState = true;
 
         return $this;
     }
@@ -108,31 +106,6 @@ trait HasState
         return $this;
     }
 
-    public function hydrateDefaultState(): static
-    {
-        if (! $this->hasDefaultState()) {
-            return $this;
-        }
-
-        $this->state($this->getDefaultState());
-
-        return $this;
-    }
-
-    public function fillStateWithNull(bool $shouldOverwrite = true): static
-    {
-        $livewire = $this->getLivewire();
-
-        data_set(
-            $livewire,
-            $this->getStatePath(),
-            null,
-            $shouldOverwrite,
-        );
-
-        return $this;
-    }
-
     public function mutateDehydratedState($state)
     {
         return $this->evaluate(
@@ -151,6 +124,38 @@ trait HasState
         $this->mutateDehydratedStateUsing = $callback;
 
         return $this;
+    }
+
+    public function hydrateState(bool $shouldFillWithDefault): void
+    {
+        if (! Arr::has((array) $this->getLivewire(), $this->getStatePath())) {
+            $this->hydrateMissingState($shouldFillWithDefault);
+        }
+
+        foreach ($this->getChildComponentContainers(withHidden: true) as $container) {
+            $container->hydrateState($shouldFillWithDefault);
+        }
+
+        $this->callAfterStateHydrated();
+    }
+
+    public function hydrateMissingState(bool $shouldFillWithDefault): void
+    {
+        if ($shouldFillWithDefault) {
+            $this->state($this->getDefaultState());
+
+            return;
+        }
+
+        if ($this->canLoadStateFromRelationships()) {
+            $this->loadStateFromRelationships();
+
+            if (Arr::has((array) $this->getLivewire(), $this->getStatePath())) {
+                return;
+            }
+        }
+
+        $this->state(null);
     }
 
     public function state($state): static
@@ -217,11 +222,6 @@ trait HasState
         }
 
         return implode('.', $pathComponents);
-    }
-
-    protected function hasDefaultState(): bool
-    {
-        return $this->hasDefaultState;
     }
 
     public function isDehydrated(): bool

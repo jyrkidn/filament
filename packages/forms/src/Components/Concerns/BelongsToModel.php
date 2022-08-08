@@ -33,13 +33,11 @@ trait BelongsToModel
 
     public function loadStateFromRelationships(): void
     {
-        $callback = $this->loadStateFromRelationshipsUsing;
-
-        if (! $callback) {
+        if (! $this->canLoadStateFromRelationships()) {
             return;
         }
 
-        $this->evaluate($callback);
+        $this->evaluate($this->loadStateFromRelationshipsUsing);
     }
 
     public function saveRelationshipsUsing(?Closure $callback): static
@@ -54,6 +52,11 @@ trait BelongsToModel
         $this->loadStateFromRelationshipsUsing = $callback;
 
         return $this;
+    }
+
+    public function canLoadStateFromRelationships(): bool
+    {
+        return $this->getRecord() && $this->loadStateFromRelationshipsUsing !== null;
     }
 
     public function getModel(): ?string
