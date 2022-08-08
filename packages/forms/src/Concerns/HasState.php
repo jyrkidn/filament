@@ -3,7 +3,6 @@
 namespace Filament\Forms\Concerns;
 
 use Filament\Forms\Components\BaseFileUpload;
-use Filament\Forms\Components\Component;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
