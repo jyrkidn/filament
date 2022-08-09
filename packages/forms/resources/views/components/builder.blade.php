@@ -188,19 +188,22 @@
                                 class="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center h-12 -mb-12"
                             >
                                 <div x-data class="relative flex justify-center">
-                                    <x-forms::icon-button
-                                        :label="$getCreateItemBetweenButtonLabel()"
-                                        icon="heroicon-o-plus"
-                                        x-on:click="$refs.panel.toggle"
-                                        type="button"
-                                    />
+                                    <x-forms::dropdown>
+                                        <x-slot name="trigger">
+                                            <x-forms::icon-button
+                                                :label="$getCreateItemBetweenButtonLabel()"
+                                                icon="heroicon-o-plus"
+                                                type="button"
+                                            />
+                                        </x-slot>
 
-                                    <x-forms::builder.block-picker
-                                        :blocks="$getBlocks()"
-                                        :create-after-item="$uuid"
-                                        :state-path="$getStatePath()"
-                                        class="py-2"
-                                    />
+                                        <x-forms::builder.block-picker
+                                            :blocks="$getBlocks()"
+                                            :create-after-item="$uuid"
+                                            :state-path="$getStatePath()"
+                                            class="py-2"
+                                        />
+                                    </x-forms::dropdown>
                                 </div>
                             </div>
                         @endif
